@@ -5,3 +5,8 @@ tools/
 combusessa_*.html
 combusessa_*.css
 combusessa_*.js
+
+# Datos personales y reportes de trabajo — NUNCA subir a GitHub (habeas data)
+*.csv
+*.xlsx
+limpieza_duplicados.sql

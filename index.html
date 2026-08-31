@@ -2,9 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Alistamiento Diario</title>
   <link rel="icon" type="image/png" href="assets/favicon-combuses.png">
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4040c6">
+  <link rel="apple-touch-icon" href="assets/icon-192.png">
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css">
   <link rel="stylesheet" href="styles.css">
 </head>
@@ -17,7 +20,7 @@
     </header>
 
     <div id="networkAlert" class="alert alert-danger d-none" role="alert"></div>
-    <div id="dailyAlert" class="alert alert-warning d-none" role="alert"></div>
+    <div id="dailyAlert" class="daily-alert d-none" role="status"></div>
 
     <section class="card app-card border-0 shadow-lg" id="appCard">
       <div class="guide-box mb-3">
@@ -36,26 +39,19 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label fw-semibold" for="interno">Vehiculo (interno)</label>
-        <select id="interno" class="form-select form-select-lg">
-          <option value="">Seleccione un interno</option>
-        </select>
+        <label class="form-label fw-semibold" for="placaSelect">Placa del vehiculo</label>
+        <input id="placaSelect" class="form-input form-control form-control-lg" type="text" list="placasList" autocomplete="off" placeholder="Escriba, pegue o seleccione la placa">
+        <datalist id="placasList"></datalist>
+        <small id="placaMsg" class="input-msg" role="alert"></small>
       </div>
 
       <div class="info-card" id="vehicleCard" style="display:none;">
-        <span><strong>Interno:</strong> <span id="displayInterno">-</span></span>
         <span><strong>Placa:</strong> <span id="displayPlaca">-</span></span>
       </div>
 
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label fw-semibold" for="placa">Placa</label>
-          <input id="placa" class="form-input form-control form-control-lg" type="text" readonly>
-        </div>
-        <div class="form-group">
-          <label class="form-label fw-semibold" for="doc">Documento conductor</label>
-          <input id="doc" class="form-input form-control form-control-lg" type="text" inputmode="numeric" placeholder="Ingrese documento">
-        </div>
+      <div class="form-group">
+        <label class="form-label fw-semibold" for="doc">Documento conductor</label>
+        <input id="doc" class="form-input form-control form-control-lg" type="text" inputmode="numeric" placeholder="Ingrese documento">
       </div>
 
       <div class="form-group">
@@ -65,48 +61,66 @@
 
       <div class="checks-section">
         <div class="section-header d-flex justify-content-between align-items-center">
-          <span>Actividades de alistamiento (obligatorio: todas)</span>
+          <span>Alistamientos Minimos (obligatorio: todas)</span>
           <button id="selectAllBtn" type="button" class="btn btn-sm btn-light">Seleccionar todas</button>
         </div>
         <div class="px-2 pt-2 small text-muted" id="checkCounter">0/11 seleccionadas</div>
         <div class="checks-grid" id="lista"></div>
       </div>
 
+      <div class="checks-section mt-3">
+        <div class="section-header d-flex justify-content-between align-items-center">
+          <span>Alistamientos Adicionales (opcional)</span>
+          <button id="selectAllAdicionalesBtn" type="button" class="btn btn-sm btn-light">Seleccionar todas</button>
+        </div>
+        <div class="checks-grid" id="listaAdicionales"></div>
+      </div>
+
       <button id="submitBtn" class="submit-btn btn btn-success btn-lg w-100 mt-3">Enviar Alistamiento</button>
     </section>
+
+    <footer class="app-footer">
+      <span id="appVersion">v-</span>
+    </footer>
   </main>
 
   <div class="modal loading" id="loadingModal">
-    <div class="modal-card">
-      <h3 class="modal-title">Enviando alistamiento...</h3>
-      <p>Por favor espera unos segundos.</p>
+    <div class="modal-card modal-centered">
+      <div class="spinner" aria-hidden="true"></div>
+      <h3 class="modal-title">Enviando alistamiento</h3>
+      <p id="loadingStatus" aria-live="polite">Conectando con SICOV...</p>
     </div>
   </div>
 
   <div class="modal success" id="successModal">
-    <div class="modal-card">
-      <h3 class="modal-title">Alistamiento enviado</h3>
+    <div class="modal-card modal-centered">
+      <div class="modal-icon modal-icon-ok" aria-hidden="true">&#10003;</div>
+      <h3 class="modal-title">Alistamiento registrado</h3>
+      <p class="modal-sub">Enviado y confirmado por SICOV. Este vehiculo ya quedo alistado hoy.</p>
       <div class="modal-details">
-        <div><strong>Interno:</strong> <span id="okInterno">-</span></div>
         <div><strong>Placa:</strong> <span id="okPlaca">-</span></div>
         <div><strong>Conductor:</strong> <span id="okNombre">-</span></div>
         <div><strong>Fecha:</strong> <span id="okFecha">-</span></div>
+        <div><strong>N&deg; SICOV:</strong> <span id="okSicov">-</span></div>
       </div>
-      <button class="btn btn-primary" id="closeSuccessBtn">Aceptar</button>
+      <button class="btn btn-primary w-100" id="closeSuccessBtn">Aceptar</button>
     </div>
   </div>
 
   <div class="modal error" id="errorModal">
-    <div class="modal-card">
-      <h3 class="modal-title">Error</h3>
+    <div class="modal-card modal-centered">
+      <div class="modal-icon modal-icon-err" aria-hidden="true">!</div>
+      <h3 class="modal-title">No se pudo completar</h3>
       <p id="errorMessage">No fue posible completar la solicitud.</p>
-      <button class="btn btn-primary" id="closeErrorBtn">Cerrar</button>
+      <button class="btn btn-primary w-100" id="closeErrorBtn">Cerrar</button>
     </div>
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="version.js"></script>
   <script src="config.js"></script>
   <script src="app.js"></script>
+  <script src="pwa.js"></script>
 </body>
 </html>
